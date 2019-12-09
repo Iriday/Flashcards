@@ -1,13 +1,17 @@
 package flashcards;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.*;
 
 public class Main {
+
     private enum KeyOrVal {KEY, VALUE}
 
-    private static Map<String, String> cards = new LinkedHashMap<>();
+    // term, definition, hardestCard
+    private static Map<String, Map.Entry<String, Integer>> cards = new LinkedHashMap<>();
+    private static ArrayList<String> log = new ArrayList<>();
     //private static ArrayList<String> keys = new ArrayList<>();
     //private static ArrayList<String> values = new ArrayList<>();
     private static Scanner scn = new Scanner(System.in);
@@ -17,7 +21,7 @@ public class Main {
 
         boolean on = true;
         while (on) {
-            System.out.println("Input the action (add, remove, import, export, ask, exit):");
+            System.out.println("Input the action (add, remove, import, export, ask, exit, log, hardest card, reset stats):");
             switch (scn.nextLine().toLowerCase(Locale.ENGLISH)) {
                 case "add":
                     addCard();
@@ -37,14 +41,24 @@ public class Main {
                 case "exit":
                     System.out.println("Bye bye!");
                     on = false;
+                    break;
+                case "log":
+                    log();
+                    break;
+                case "hardest card":
+                    hardestCard();
+                    break;
+                case "reset stats":
+                    resetStats();
+                    break;
             }
         }
     }
 
     //get key by value
     public static String getTermByDefinition(String val) {
-        for (Map.Entry<String, String> pair : cards.entrySet()) {
-            if (pair.getValue().equals(val)) {
+        for (Map.Entry<String, Map.Entry<String, Integer>> pair : cards.entrySet()) {
+            if (pair.getValue().getKey().equals(val)) {
                 return pair.getKey();
             }
         }
@@ -56,7 +70,7 @@ public class Main {
             case KEY:
                 return cards.keySet().contains(data);
             case VALUE:
-                return cards.values().contains(data);
+                return cards.values().contains(new Definition(data, 0));
             default:
                 return false;
         }
@@ -64,13 +78,13 @@ public class Main {
 
     private static ArrayList<String> keys;
 
-    public static void ask() {
+    private static void ask() {
 
         System.out.println("How many times to ask?");
         int num = Integer.parseInt(scn.nextLine());
         String answer;
         String randTerm;
-        String value;
+        Map.Entry<String, Integer> value;
         int size = cards.size();
         keys = new ArrayList<>(cards.keySet());
 
@@ -79,20 +93,22 @@ public class Main {
             value = cards.get(randTerm);
             System.out.printf("Print the definition of \"%s\":\n", randTerm);//"black"
             answer = scn.nextLine();
-            if (value.equals(answer)) {
+            if (value.getKey().equals(answer)) {
                 System.out.println("Correct answer.");
                 continue;
             }
             String s = getTermByDefinition(answer);
             if (s == null) {
-                System.out.printf("Wrong answer. The correct one is \"%s\".\n", value);//"white"
+                System.out.printf("Wrong answer. The correct one is \"%s\".\n", value.getKey());//"white"
+                value.setValue(value.getValue() + 1);
             } else {
-                System.out.printf("Wrong answer. The correct one is \"%s\", you've just written the definition of \"%s\".\n", value, s);
+                System.out.printf("Wrong answer. The correct one is \"%s\", you've just written the definition of \"%s\".\n", value.getKey(), s);
+                value.setValue(value.getValue() + 1);
             }
         }
     }
 
-    public static void addCard() {
+    private static void addCard() {
         String term;
         String definition;
 
@@ -117,11 +133,14 @@ public class Main {
         //break;
         // }
         //  }
-        cards.put(term, definition);
+        cards.put(term, new Definition<>(definition, 0));
+        log.add(term); //log.add(---addCard()---);
+        log.add(definition);
+        //log.add("0");
         System.out.printf("The pair (\"%s\":\"%s\") has been added.\n", term, definition);
     }
 
-    public static void removeCard() {
+    private static void removeCard() {
         System.out.println("The card:");
         String term = scn.nextLine();
         if (checkIfPresent(term, KeyOrVal.KEY)) {
@@ -133,13 +152,19 @@ public class Main {
         }
     }
 
-    public static void loadFromFile() {
+    private static void loadFromFile() {
         int counter = 0;
         System.out.println("File name:");
         try {
             Scanner fileScanner = new Scanner(new File(scn.nextLine()));
             while (fileScanner.hasNext()) {
-                cards.put(fileScanner.nextLine(), fileScanner.nextLine());
+                String term = fileScanner.nextLine();
+                String definition = fileScanner.nextLine();
+                Integer errCount = Integer.parseInt(fileScanner.nextLine());
+                cards.put(term, new Definition<>(definition, errCount));
+                log.add(term);//log.add("---loadFromFile()---");
+                log.add(definition);
+                log.add(errCount.toString());
                 counter++;
             }
             System.out.println(counter + " cards have been loaded.");
@@ -150,14 +175,15 @@ public class Main {
         }
     }
 
-    public static void saveToFile() {
+    private static void saveToFile() {
         int counter = 0;
         System.out.println("File name:");
         try {
             PrintWriter writer = new PrintWriter(scn.nextLine());
-            for (Map.Entry<String, String> card : cards.entrySet()) {
+            for (Map.Entry<String, Map.Entry<String, Integer>> card : cards.entrySet()) {
                 writer.println(card.getKey());
-                writer.println(card.getValue());
+                writer.println(card.getValue().getKey());
+                writer.println(card.getValue().getValue());
                 counter++;
             }
             writer.flush();
@@ -165,6 +191,85 @@ public class Main {
             System.out.println(counter + " cards have been saved.");
         } catch (Exception e) {
             System.out.println("Error while wring to file.");
+        }
+    }
+
+    private static void log() {
+        System.out.println("File name:");
+        try {
+            PrintWriter writer = new PrintWriter(scn.nextLine());
+            for (String line : log) {
+                writer.println(line);
+            }
+            String output = "The log has been saved.";
+            System.out.println(output);
+//            log.add(output);
+//            writer.println(output);
+            writer.flush();
+            writer.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("Error");
+        }
+    }
+
+    private static void hardestCard() {
+        Map<String, Integer> cardsWithMostMistakes = new HashMap<>(); // ArrayList???
+        int maxErr = -1;
+
+        for (Map.Entry<String, Map.Entry<String, Integer>> card : cards.entrySet()) {
+            int errCounter = card.getValue().getValue();
+            if (errCounter != 0 && errCounter > maxErr) {
+                cardsWithMostMistakes.clear();
+                cardsWithMostMistakes.put(card.getKey(), card.getValue().getValue());
+                maxErr = errCounter;
+            } else if (errCounter == maxErr) {
+                cardsWithMostMistakes.put(card.getKey(), card.getValue().getValue());
+            }
+        }
+
+        String space = " ";
+        String quote = "\"";
+        String comma = ",";
+        int cardsSize = cardsWithMostMistakes.size();
+        StringBuilder builder = new StringBuilder("The hardest card" + (cardsSize == 1 ? " is" : "s are"));
+        if (!cardsWithMostMistakes.isEmpty()) {
+            String output1;
+            for (Map.Entry<String, Integer> pair : cardsWithMostMistakes.entrySet()) {
+                builder.append(space);
+                builder.append(quote);
+                builder.append(pair.getKey());
+                builder.append(quote);
+                builder.append(comma);
+            }
+            builder.deleteCharAt(builder.length() - 1);
+            builder.append(String.format(". You have %d errors answering %s.", maxErr, cardsSize == 1 ? "it" : "them"));
+            output1 = builder.toString();
+            System.out.println(output1);
+            log.add(output1);
+        } else {
+            String output2 = "There are no cards with errors.";
+            System.out.println(output2);
+            log.add(output2);
+        }
+    }
+
+    private static void resetStats() {
+        boolean cardsWithErrors = false;
+
+        for (Map.Entry<String, Map.Entry<String, Integer>> card : cards.entrySet()) {
+            if (card.getValue().getValue() != 0) {
+                cardsWithErrors = true;
+            }
+            card.getValue().setValue(0);
+        }
+        if (!cardsWithErrors) {
+            String output2 = "There are no cards with errors.";
+            System.out.println(output2);
+            log.add(output2);
+        } else {
+            String output1 = "Card statistics has been reset.";
+            System.out.println(output1);
+            log.add(output1);
         }
     }
 }
