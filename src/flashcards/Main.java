@@ -16,9 +16,39 @@ public class Main {
     //private static ArrayList<String> values = new ArrayList<>();
     private static Scanner scn = new Scanner(System.in);
     private static Random random = new Random();
+    private static String pathImport = "";
+    private static String pathExport = "";
+    private static boolean importInput = false;
+    private static boolean exportInput = false;
 
     public static void main(String[] args) {
 
+        if (args.length == 2) {
+            if (args[0].equalsIgnoreCase("-import")) {
+                pathImport = args[1];
+                loadFromFile();
+            } else if (args[0].equalsIgnoreCase("-export")) {
+                pathExport = args[1];
+            }
+        }
+        if (args.length == 4) {
+            if (args[0].equalsIgnoreCase("-import")) {
+                pathImport = args[1];
+                loadFromFile();
+            } else if (args[0].equalsIgnoreCase("-export")) {
+                pathExport = args[1];
+            }
+            if (args[2].equalsIgnoreCase("-import")) {
+                pathImport = args[3];
+                loadFromFile();
+            } else if (args[2].equalsIgnoreCase("-export")) {
+                pathExport = args[3];
+            }
+        }
+       /* if (pathImport.equals("")) {
+            System.out.println("0 cards have been loaded.");
+        }
+*/
         boolean on = true;
         while (on) {
             System.out.println("Input the action (add, remove, import, export, ask, exit, log, hardest card, reset stats):");
@@ -30,16 +60,22 @@ public class Main {
                     removeCard();
                     break;
                 case "import":
+                    importInput = true;
                     loadFromFile();
                     break;
                 case "export":
+                    exportInput = true;
                     saveToFile();
                     break;
                 case "ask":
                     ask();
                     break;
                 case "exit":
-                    System.out.println("Bye bye!");
+                    if (!pathExport.equals("")) {
+                        System.out.println("Bye bye!");
+                    }
+                    saveToFile();
+
                     on = false;
                     break;
                 case "log":
@@ -154,9 +190,17 @@ public class Main {
 
     private static void loadFromFile() {
         int counter = 0;
-        System.out.println("File name:");
+        String filePath;
+        if (importInput) {
+            System.out.println("File name:");
+            filePath = scn.nextLine();
+            importInput = false;
+        } else {
+            filePath = pathImport;
+        }
+
         try {
-            Scanner fileScanner = new Scanner(new File(scn.nextLine()));
+            Scanner fileScanner = new Scanner(new File(filePath));
             while (fileScanner.hasNext()) {
                 String term = fileScanner.nextLine();
                 String definition = fileScanner.nextLine();
@@ -177,9 +221,21 @@ public class Main {
 
     private static void saveToFile() {
         int counter = 0;
-        System.out.println("File name:");
+        String filePath;
+        if (exportInput) {
+            System.out.println("File name:");
+            filePath = scn.nextLine();
+            exportInput = false;
+        } else {
+            if (pathExport.equals("")) {
+                System.out.println("0 cards have been saved.");
+                return;
+            }
+            filePath = pathExport;
+        }
+
         try {
-            PrintWriter writer = new PrintWriter(scn.nextLine());
+            PrintWriter writer = new PrintWriter(filePath);
             for (Map.Entry<String, Map.Entry<String, Integer>> card : cards.entrySet()) {
                 writer.println(card.getKey());
                 writer.println(card.getValue().getKey());
@@ -213,7 +269,7 @@ public class Main {
     }
 
     private static void hardestCard() {
-        Map<String, Integer> cardsWithMostMistakes = new HashMap<>(); // ArrayList???
+        Map<String, Integer> cardsWithMostMistakes = new HashMap<>(); // ArrayList?
         int maxErr = -1;
 
         for (Map.Entry<String, Map.Entry<String, Integer>> card : cards.entrySet()) {
@@ -227,13 +283,14 @@ public class Main {
             }
         }
 
-        String space = " ";
-        String quote = "\"";
-        String comma = ",";
-        int cardsSize = cardsWithMostMistakes.size();
-        StringBuilder builder = new StringBuilder("The hardest card" + (cardsSize == 1 ? " is" : "s are"));
         if (!cardsWithMostMistakes.isEmpty()) {
+            String space = " ";
+            String quote = "\"";
+            String comma = ",";
+            int cardsSize = cardsWithMostMistakes.size();
+            StringBuilder builder = new StringBuilder("The hardest card" + (cardsSize == 1 ? " is" : "s are"));
             String output1;
+
             for (Map.Entry<String, Integer> pair : cardsWithMostMistakes.entrySet()) {
                 builder.append(space);
                 builder.append(quote);
