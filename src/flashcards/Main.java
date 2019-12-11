@@ -115,7 +115,10 @@ public class Main {
     private static ArrayList<String> keys;
 
     private static void ask() {
-
+        if (cards.isEmpty()) {
+            System.out.println("You have to add or import some cards before choosing this action.");
+            return;
+        }
         System.out.println("How many times to ask?");
         int num = Integer.parseInt(scn.nextLine());
         String answer;
