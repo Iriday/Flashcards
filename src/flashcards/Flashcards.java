@@ -104,15 +104,13 @@ public class Flashcards {
     public static boolean checkIfPresent(String data, KeyOrVal keyOrVal) {
         switch (keyOrVal) {
             case KEY:
-                return cards.keySet().contains(data);
+                return cards.containsKey(data);
             case VALUE:
-                return cards.values().contains(new Definition(data, 0));
+                return cards.containsValue(new Definition<>(data, 0));
             default:
                 return false;
         }
     }
-
-    private static ArrayList<String> keys;
 
     private static void ask() {
         if (cards.isEmpty()) {
@@ -125,7 +123,7 @@ public class Flashcards {
         String randTerm;
         Map.Entry<String, Integer> value;
         int size = cards.size();
-        keys = new ArrayList<>(cards.keySet());
+        ArrayList<String> keys = new ArrayList<>(cards.keySet());
 
         for (int i = 0; i < num; i++) {
             randTerm = keys.get(random.nextInt(size));
@@ -139,11 +137,10 @@ public class Flashcards {
             String s = getTermByDefinition(answer);
             if (s == null) {
                 System.out.printf("Wrong answer. The correct one is \"%s\".\n", value.getKey());//"white"
-                value.setValue(value.getValue() + 1);
             } else {
                 System.out.printf("Wrong answer. The correct one is \"%s\", you've just written the definition of \"%s\".\n", value.getKey(), s);
-                value.setValue(value.getValue() + 1);
             }
+            value.setValue(value.getValue() + 1);
         }
     }
 
