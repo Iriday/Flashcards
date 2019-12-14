@@ -5,7 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.*;
 
-public class Main {
+public class Flashcards {
 
     private enum KeyOrVal {KEY, VALUE}
 
